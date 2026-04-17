@@ -1,0 +1,15 @@
+package com.analyzer.error;
+
+public enum AnalysisErrorCode {
+    INVALID_PATH,
+    EMPTY_PROJECT,
+    PARSE_ERROR,
+    PLUGIN_NOT_FOUND,
+    PLUGIN_ERROR,
+    MODULE_ERROR,
+    REPORT_WRITE_ERROR,
+    CONFIG_PARSE_ERROR,
+    DEPENDENCY_PARSE_ERROR,
+    TIMEOUT_ERROR,
+    UNKNOWN_ERROR
+}

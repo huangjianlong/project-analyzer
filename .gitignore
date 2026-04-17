@@ -1,0 +1,22 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Java
+project-analyzer-java/target/
+project-analyzer-java/test-output*/
+project-analyzer-java/analysis-reports/
+
+# TypeScript
+project-analyzer-ts/node_modules/
+project-analyzer-ts/dist/
+test-output-ts/
+test-output-java/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Analysis output
+analysis-reports/
