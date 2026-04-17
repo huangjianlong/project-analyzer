@@ -38,6 +38,7 @@ public class FlowTrace {
         private String methodName;
         private String filePath;
         private String httpPath; // nullable
+        private String description; // nullable — 方法描述
 
         public EntryPoint() {}
 
@@ -64,6 +65,9 @@ public class FlowTrace {
 
         public String getHttpPath() { return httpPath; }
         public void setHttpPath(String httpPath) { this.httpPath = httpPath; }
+
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
     }
 
     public enum EntryPointType {

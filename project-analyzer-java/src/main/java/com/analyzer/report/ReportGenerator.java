@@ -192,11 +192,12 @@ public class ReportGenerator {
         sb.append("## 入口点列表\n\n");
         if (flows.getEntryPoints().isEmpty()) sb.append("未识别到入口点。\n");
         else {
-            sb.append("| 类型 | 类名 | 方法名 | 文件 | HTTP 路径 |\n|------|------|--------|------|----------|\n");
+            sb.append("| 类型 | 类名 | 方法名 | 文件 | HTTP 路径 | 方法描述 |\n|------|------|--------|------|----------|----------|\n");
             for (var ep : flows.getEntryPoints()) {
                 sb.append("| ").append(ep.getType().getValue()).append(" | ").append(ep.getClassName())
                         .append(" | ").append(ep.getMethodName()).append(" | ").append(ep.getFilePath())
-                        .append(" | ").append(ep.getHttpPath() != null ? ep.getHttpPath() : "-").append(" |\n");
+                        .append(" | ").append(ep.getHttpPath() != null ? ep.getHttpPath() : "-")
+                        .append(" | ").append(ep.getDescription() != null ? ep.getDescription() : "-").append(" |\n");
             }
         }
         sb.append("\n## 流程详情\n\n");

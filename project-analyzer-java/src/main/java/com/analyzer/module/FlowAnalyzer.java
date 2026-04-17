@@ -96,10 +96,12 @@ public class FlowAnalyzer implements AnalysisModuleInterface {
                         if (child.getType() == AstNode.AstNodeType.METHOD) {
                             String key = node.getFilePath() + ":" + node.getName() + "." + child.getName();
                             if (seen.add(key)) {
-                                entryPoints.add(new FlowTrace.EntryPoint(
+                                var ep = new FlowTrace.EntryPoint(
                                         FlowTrace.EntryPointType.CONTROLLER,
                                         node.getName(), child.getName(),
-                                        node.getFilePath(), extractHttpPath(child, node)));
+                                        node.getFilePath(), extractHttpPath(child, node));
+                                ep.setDescription(inferMethodDescription(child, node));
+                                entryPoints.add(ep);
                             }
                         }
                     }
@@ -110,10 +112,12 @@ public class FlowAnalyzer implements AnalysisModuleInterface {
                         if (child.getType() == AstNode.AstNodeType.METHOD && isEventHandler(child)) {
                             String key = node.getFilePath() + ":" + node.getName() + "." + child.getName();
                             if (seen.add(key)) {
-                                entryPoints.add(new FlowTrace.EntryPoint(
+                                var ep = new FlowTrace.EntryPoint(
                                         FlowTrace.EntryPointType.EVENT_HANDLER,
                                         node.getName(), child.getName(),
-                                        node.getFilePath(), null));
+                                        node.getFilePath(), null);
+                                ep.setDescription(inferMethodDescription(child, node));
+                                entryPoints.add(ep);
                             }
                         }
                     }
@@ -123,14 +127,36 @@ public class FlowAnalyzer implements AnalysisModuleInterface {
                 if ("main".equalsIgnoreCase(node.getName())) {
                     String key = node.getFilePath() + "::" + node.getName();
                     if (seen.add(key)) {
-                        entryPoints.add(new FlowTrace.EntryPoint(
+                        var ep = new FlowTrace.EntryPoint(
                                 FlowTrace.EntryPointType.MAIN, "", node.getName(),
-                                node.getFilePath(), null));
+                                node.getFilePath(), null);
+                        ep.setDescription("应用程序主入口");
+                        entryPoints.add(ep);
                     }
                 }
             }
         }
         return entryPoints;
+    }
+
+    /** 根据方法名、参数、返回类型推断方法描述 */
+    private String inferMethodDescription(AstNode method, AstNode classNode) {
+        String methodName = method.getName();
+        String className = classNode != null ? classNode.getName() : "";
+
+        // 从方法签名推断
+        StringBuilder desc = new StringBuilder();
+        desc.append(className).append(".").append(methodName).append("(");
+        if (method.getParameters() != null && !method.getParameters().isEmpty()) {
+            desc.append(method.getParameters().stream()
+                    .map(p -> p.getType() + " " + p.getName())
+                    .reduce((a, b) -> a + ", " + b).orElse(""));
+        }
+        desc.append(")");
+        if (method.getReturnType() != null && !"void".equals(method.getReturnType())) {
+            desc.append(" → ").append(method.getReturnType());
+        }
+        return desc.toString();
     }
 
     private boolean isControllerClass(AstNode node) {

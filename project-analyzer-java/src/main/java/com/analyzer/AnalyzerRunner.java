@@ -82,6 +82,10 @@ public class AnalyzerRunner implements CommandLineRunner {
                     System.out.println("  🤖 AI 生成修复建议...");
                     aiAnalyzer.enhancePitfallSuggestions(result.getReport().getPitfalls());
 
+                    // 增强入口点方法描述
+                    System.out.println("  🤖 AI 分析入口点方法...");
+                    aiAnalyzer.enhanceFlowDescriptions(result.getReport().getFlows());
+
                     // 生成项目总结
                     System.out.println("  🤖 AI 生成项目总结...");
                     String summary = aiAnalyzer.generateProjectSummary(result.getReport());

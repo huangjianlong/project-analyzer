@@ -132,6 +132,30 @@ public class AiEnhancedAnalyzer {
     }
 
     /**
+     * 为入口点生成方法描述 — 逐个请求。
+     */
+    public void enhanceFlowDescriptions(FlowResult flows) {
+        if (flows == null || flows.getEntryPoints() == null) return;
+
+        for (FlowTrace.EntryPoint ep : flows.getEntryPoints()) {
+            try {
+                String sig = ep.getDescription() != null ? ep.getDescription() : 
+                        ep.getClassName() + "." + ep.getMethodName();
+                String prompt = "方法签名「" + sig + "」，类型: " + ep.getType().getValue()
+                        + "。用一句话描述此方法的功能（15字内）";
+
+                String resp = llm.chat(SYS, prompt);
+                String desc = clean(resp);
+                if (!desc.isBlank() && desc.length() < 100) {
+                    ep.setDescription(desc);
+                }
+            } catch (Exception e) {
+                // 单个失败不影响其他
+            }
+        }
+    }
+
+    /**
      * 生成项目总结 — 单次请求，只发关键元信息。
      */
     public String generateProjectSummary(AnalysisReport report) {
