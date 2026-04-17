@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
  */
 public class AiEnhancedAnalyzer {
 
-    /** 极简 system prompt，节省 token */
-    private static final String SYS = "你是代码分析专家，用中文简短回答。";
+    /** 极简 system prompt，节省 token。/no_think 禁用 qwen3 的 thinking 模式 */
+    private static final String SYS = "/no_think\n你是代码分析专家，用中文简短回答。";
 
     private final LlmService llm;
     private final int batchSize;
@@ -48,12 +48,14 @@ public class AiEnhancedAnalyzer {
 
                 String resp = llm.chat(SYS, prompt.toString());
                 String desc = clean(resp);
+                System.out.println("    [AI] 模块「" + shortName(mod.getName()) + "」→ raw=" 
+                        + (resp == null ? "null" : resp.length() + "chars") + ", clean=" + desc);
                 if (!desc.isBlank() && desc.length() < 100) {
                     mod.setDescription(desc);
                     mod.setInferred(false);
                 }
             } catch (Exception e) {
-                // 单个模块失败不影响其他
+                System.err.println("    [AI] 模块「" + mod.getName() + "」异常: " + e.getMessage());
             }
         }
     }
@@ -167,8 +169,12 @@ public class AiEnhancedAnalyzer {
     /** 清理模型回复：去掉 think 标签、markdown 格式等 */
     private String clean(String response) {
         if (response == null || response.isBlank()) return "";
-        // 去掉 <think>...</think>
-        String s = response.replaceAll("<think>[\\s\\S]*?</think>", "").trim();
+        // 去掉 <think>...</think>（包括跨行内容）
+        String s = response.replaceAll("(?s)<think>.*?</think>", "").trim();
+        // 如果清理后为空，尝试提取 </think> 之后的内容
+        if (s.isEmpty() && response.contains("</think>")) {
+            s = response.substring(response.lastIndexOf("</think>") + "</think>".length()).trim();
+        }
         // 去掉 markdown 粗体/斜体
         s = s.replaceAll("[*_`#]", "").trim();
         // 去掉开头换行

@@ -80,6 +80,13 @@ public class ReportGenerator {
     private static String renderProjectOverview(AnalysisReport report) {
         var sb = new StringBuilder(buildHeader("项目概览", report.getMetadata()));
         var p = report.getProfile();
+
+        // AI 项目总结
+        if (report.getAiSummary() != null && !report.getAiSummary().isBlank()) {
+            sb.append("## AI 项目总结\n\n");
+            sb.append("> ").append(report.getAiSummary()).append("\n\n");
+        }
+
         sb.append("## 基本信息\n\n");
         sb.append("- 项目名称: ").append(p.getProjectName()).append("\n");
         sb.append("- 项目路径: ").append(p.getProjectPath()).append("\n");

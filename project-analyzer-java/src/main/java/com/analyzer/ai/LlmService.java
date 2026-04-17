@@ -25,7 +25,9 @@ public class LlmService {
     public LlmService(AnalyzerProperties.Ai config) {
         this.config = config;
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(config.getTimeout()))
+                .version(HttpClient.Version.HTTP_1_1)   // LM Studio 只支持 HTTP/1.1
+                .connectTimeout(Duration.ofSeconds(30))
+                .proxy(HttpClient.Builder.NO_PROXY)      // 不走代理（替换 ProxySelector.of(null)）
                 .build();
     }
 
@@ -46,7 +48,8 @@ public class LlmService {
                     ),
                     "max_tokens", config.getMaxTokens(),
                     "temperature", config.getTemperature(),
-                    "stream", false
+                    "stream", false,
+                    "chat_template_kwargs", Map.of("enable_thinking", false)
             );
 
             String json = gson.toJson(requestBody);
@@ -80,7 +83,27 @@ public class LlmService {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
                 if (message != null) {
-                    return (String) message.get("content");
+                    String content = (String) message.get("content");
+                    // 如果 content 为空，尝试从 reasoning_content 提取（qwen3 thinking 模式）
+                    if ((content == null || content.isBlank()) && message.containsKey("reasoning_content")) {
+                        String reasoning = (String) message.get("reasoning_content");
+                        if (reasoning != null && !reasoning.isBlank()) {
+                            // 取 reasoning 最后一段作为回答
+                            String[] parts = reasoning.split("\n\n");
+                            content = parts[parts.length - 1].trim();
+                            System.out.println("    [LLM] 从 reasoning_content 提取: " 
+                                    + content.substring(0, Math.min(80, content.length())).replace("\n", "\\n"));
+                        }
+                    }
+                    if (content != null && content.length() < 50) {
+                        System.out.println("    [LLM] raw content: " + content.replace("\n", "\\n"));
+                    } else if (content != null) {
+                        System.out.println("    [LLM] raw content (" + content.length() + " chars): " 
+                                + content.substring(0, Math.min(100, content.length())).replace("\n", "\\n") + "...");
+                    } else {
+                        System.out.println("    [LLM] content is null, full message keys: " + message.keySet());
+                    }
+                    return content;
                 }
             }
             return null;
@@ -96,17 +119,7 @@ public class LlmService {
      */
     public boolean isAvailable() {
         if (!config.isEnabled()) return false;
-        try {
-            String url = config.getBaseUrl().replaceAll("/+$", "") + "/models";
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(5))
-                    .GET().build();
-            HttpResponse<String> response = httpClient.send(request,
-                    HttpResponse.BodyHandlers.ofString());
-            return response.statusCode() == 200;
-        } catch (Exception e) {
-            return false;
-        }
+        // 跳过预检查，直接返回 true，在实际请求时处理失败
+        return true;
     }
 }

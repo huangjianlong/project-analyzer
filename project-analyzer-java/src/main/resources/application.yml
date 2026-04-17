@@ -26,13 +26,13 @@ analyzer:
   # AI 大模型配置（LM Studio / OpenAI 兼容接口）
   ai:
     enabled: true
-    base-url: http://localhost:1234/v1
-    model: qwen3-8b
+    base-url: http://192.168.0.106:1234/v1
+    model: qwen/qwen3.5-9b
     # api-key 留空即可（LM Studio 本地不需要）
     api-key: ""
     # 请求超时（秒）
     timeout: 120
     # 最大 token 数
-    max-tokens: 256
+    max-tokens: 2000
     # 温度（0-1，越低越确定）
     temperature: 0.3

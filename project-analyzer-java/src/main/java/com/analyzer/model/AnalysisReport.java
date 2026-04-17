@@ -18,6 +18,7 @@ public class AnalysisReport {
     private PitfallResult pitfalls;              // nullable
     private QuickstartResult quickstart;         // nullable
     private AiMemoryResult aiMemory;             // nullable
+    private String aiSummary;                    // nullable — AI 生成的项目总结
 
     public AnalysisReport() {}
 
@@ -53,6 +54,9 @@ public class AnalysisReport {
 
     public AiMemoryResult getAiMemory() { return aiMemory; }
     public void setAiMemory(AiMemoryResult aiMemory) { this.aiMemory = aiMemory; }
+
+    public String getAiSummary() { return aiSummary; }
+    public void setAiSummary(String aiSummary) { this.aiSummary = aiSummary; }
 
     // ─── ReportMetadata ───
 

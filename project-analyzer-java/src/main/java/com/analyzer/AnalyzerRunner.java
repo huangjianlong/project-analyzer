@@ -64,6 +64,7 @@ public class AnalyzerRunner implements CommandLineRunner {
 
             // AI 增强分析
             if (props.getAi().isEnabled()) {
+                System.out.println("  🤖 尝试连接 AI: " + props.getAi().getBaseUrl() + " 模型: " + props.getAi().getModel());
                 var llmService = new LlmService(props.getAi());
                 if (llmService.isAvailable()) {
                     System.out.println("  🤖 AI 大模型已连接 (" + props.getAi().getModel() + ")");
@@ -84,7 +85,8 @@ public class AnalyzerRunner implements CommandLineRunner {
                     // 生成项目总结
                     System.out.println("  🤖 AI 生成项目总结...");
                     String summary = aiAnalyzer.generateProjectSummary(result.getReport());
-                    if (summary != null) {
+                    if (summary != null && !summary.isBlank()) {
+                        result.getReport().setAiSummary(summary);
                         System.out.println("  📝 " + summary);
                     }
 
