@@ -143,8 +143,8 @@ export class PitfallDetector implements AnalysisModuleInterface {
             severity: 'medium',
             filePath: node.filePath,
             line: node.startLine,
-            description: `Method '${node.name}' is ${lines} lines long (threshold: ${thresholds.maxMethodLines})`,
-            suggestion: 'Consider breaking this method into smaller, focused methods.',
+            description: `方法 '${node.name}' 有 ${lines} 行（阈值: ${thresholds.maxMethodLines}）`,
+            suggestion: '建议将此方法拆分为更小的、职责单一的方法。',
           });
         }
       }
@@ -162,8 +162,8 @@ export class PitfallDetector implements AnalysisModuleInterface {
             severity: 'high',
             filePath: node.filePath,
             line: node.startLine,
-            description: `Class '${node.name}' has ${methodCount} methods (threshold: ${thresholds.maxClassMethods})`,
-            suggestion: 'Consider splitting this class using the Single Responsibility Principle.',
+            description: `类 '${node.name}' 有 ${methodCount} 个方法（阈值: ${thresholds.maxClassMethods}）`,
+            suggestion: '建议按单一职责原则拆分此类。',
           });
         }
 
@@ -173,8 +173,8 @@ export class PitfallDetector implements AnalysisModuleInterface {
             severity: 'high',
             filePath: node.filePath,
             line: node.startLine,
-            description: `Class '${node.name}' is ${classLines} lines long (threshold: ${thresholds.maxClassLines})`,
-            suggestion: 'Consider extracting functionality into separate classes.',
+            description: `类 '${node.name}' 有 ${classLines} 行（阈值: ${thresholds.maxClassLines}）`,
+            suggestion: '建议将功能提取到独立的类中。',
           });
         }
       }
@@ -188,8 +188,8 @@ export class PitfallDetector implements AnalysisModuleInterface {
             severity: 'medium',
             filePath: node.filePath,
             line: node.startLine,
-            description: `Method '${node.name}' has nesting depth ${maxDepth} (threshold: ${thresholds.maxNestingDepth})`,
-            suggestion: 'Consider using early returns, guard clauses, or extracting nested logic.',
+            description: `方法 '${node.name}' 嵌套深度为 ${maxDepth}（阈值: ${thresholds.maxNestingDepth}）`,
+            suggestion: '建议使用提前返回、守卫子句或提取嵌套逻辑。',
           });
         }
       }
@@ -218,8 +218,8 @@ export class PitfallDetector implements AnalysisModuleInterface {
             category: 'anti-pattern',
             severity: 'low',
             filePath,
-            description: `File has ${lineCount} lines (threshold: ${maxLines})`,
-            suggestion: 'Consider splitting this file into smaller, focused modules.',
+            description: `文件有 ${lineCount} 行（阈值: ${maxLines}）`,
+            suggestion: '建议将此文件拆分为更小的模块。',
           });
         }
       } catch {
@@ -237,16 +237,16 @@ export class PitfallDetector implements AnalysisModuleInterface {
 
     // Known deprecated/vulnerable packages (simplified heuristic)
     const KNOWN_DEPRECATED: Record<string, { reason: string; alternative: string }> = {
-      request: { reason: 'Deprecated since 2020', alternative: 'Use node-fetch, axios, or got' },
-      'node-uuid': { reason: 'Deprecated', alternative: 'Use uuid package' },
-      nomnom: { reason: 'Deprecated', alternative: 'Use commander or yargs' },
-      'coffee-script': { reason: 'Deprecated', alternative: 'Use CoffeeScript (coffeescript)' },
-      tsd: { reason: 'Deprecated', alternative: 'Use @types packages' },
-      'istanbul': { reason: 'Deprecated', alternative: 'Use nyc or c8' },
-      'jade': { reason: 'Renamed', alternative: 'Use pug' },
-      'github': { reason: 'Deprecated', alternative: 'Use @octokit/rest' },
-      'natives': { reason: 'Deprecated and security risk', alternative: 'Remove this dependency' },
-      'left-pad': { reason: 'Unnecessary', alternative: 'Use String.prototype.padStart()' },
+      request: { reason: '自 2020 年起已废弃', alternative: '建议使用 node-fetch、axios 或 got' },
+      'node-uuid': { reason: '已废弃', alternative: '建议使用 uuid 包' },
+      nomnom: { reason: '已废弃', alternative: '建议使用 commander 或 yargs' },
+      'coffee-script': { reason: '已废弃', alternative: '建议使用 CoffeeScript (coffeescript)' },
+      tsd: { reason: '已废弃', alternative: '建议使用 @types 包' },
+      'istanbul': { reason: '已废弃', alternative: '建议使用 nyc 或 c8' },
+      'jade': { reason: '已更名', alternative: '建议使用 pug' },
+      'github': { reason: '已废弃', alternative: '建议使用 @octokit/rest' },
+      'natives': { reason: '已废弃且存在安全风险', alternative: '建议移除此依赖' },
+      'left-pad': { reason: '不必要', alternative: '建议使用 String.prototype.padStart()' },
     };
 
     for (const dep of dependencies) {
@@ -256,7 +256,7 @@ export class PitfallDetector implements AnalysisModuleInterface {
           category: 'deprecated-dep',
           severity: 'medium',
           filePath: 'package.json',
-          description: `Dependency '${dep.name}@${dep.version}' is deprecated: ${known.reason}`,
+          description: `依赖 '${dep.name}@${dep.version}' 已废弃: ${known.reason}`,
           suggestion: known.alternative,
         });
       }
@@ -288,8 +288,8 @@ export class PitfallDetector implements AnalysisModuleInterface {
               severity,
               filePath: relPath,
               line: i + 1,
-              description: `${marker} marker found: ${line.trim().substring(0, 120)}`,
-              suggestion: `Address this ${marker} comment or create a tracking issue.`,
+              description: `${marker} 标记发现: ${line.trim().substring(0, 120)}`,
+              suggestion: `请处理此 ${marker} 注释或创建跟踪问题。`,
             });
           }
         }
@@ -329,8 +329,8 @@ export class PitfallDetector implements AnalysisModuleInterface {
               severity: 'medium',
               filePath: relPath,
               line: i + 1,
-              description: `Hardcoded URL detected: ${line.trim().substring(0, 120)}`,
-              suggestion: 'Move URLs to configuration files or environment variables.',
+              description: `检测到硬编码 URL: ${line.trim().substring(0, 120)}`,
+              suggestion: '建议将 URL 移至配置文件或环境变量。',
             });
           }
 
@@ -341,8 +341,8 @@ export class PitfallDetector implements AnalysisModuleInterface {
               severity: 'medium',
               filePath: relPath,
               line: i + 1,
-              description: `Hardcoded IP address detected: ${line.trim().substring(0, 120)}`,
-              suggestion: 'Move IP addresses to configuration files or environment variables.',
+              description: `检测到硬编码 IP 地址: ${line.trim().substring(0, 120)}`,
+              suggestion: '建议将 IP 地址移至配置文件或环境变量。',
             });
           }
 
@@ -353,8 +353,8 @@ export class PitfallDetector implements AnalysisModuleInterface {
               severity: 'medium',
               filePath: relPath,
               line: i + 1,
-              description: `Possible hardcoded secret detected: ${line.trim().substring(0, 120)}`,
-              suggestion: 'Move secrets to environment variables or a secrets manager.',
+              description: `检测到可能的硬编码密钥: ${line.trim().substring(0, 120)}`,
+              suggestion: '建议将密钥移至环境变量或密钥管理器。',
             });
           }
         }
@@ -397,8 +397,8 @@ export class PitfallDetector implements AnalysisModuleInterface {
           category: 'missing-test',
           severity: 'low',
           filePath: mod.path,
-          description: `Module '${mod.name}' has no corresponding test files`,
-          suggestion: 'Add unit tests for this module to improve code reliability.',
+          description: `模块 '${mod.name}' 没有对应的测试文件`,
+          suggestion: '建议为此模块添加单元测试以提高代码可靠性。',
         });
       }
     }

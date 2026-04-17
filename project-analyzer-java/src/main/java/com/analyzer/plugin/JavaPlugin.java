@@ -399,7 +399,7 @@ public class JavaPlugin implements LanguagePlugin {
                         List<String> javaFiles = findJavaFiles(entry);
                         if (!javaFiles.isEmpty()) {
                             modules.add(new ModuleInfo(name, entry.toString(),
-                                    "Module: " + name, true,
+                                    "模块: " + name, true,
                                     new ArrayList<>(), javaFiles, new ArrayList<>()));
                         }
                     }
@@ -413,7 +413,7 @@ public class JavaPlugin implements LanguagePlugin {
         List<String> javaFiles = findJavaFiles(dir);
         if (!javaFiles.isEmpty()) {
             modules.add(new ModuleInfo(moduleName, dir.toString(),
-                    "Java package: " + moduleName, true,
+                    "Java 包: " + moduleName, true,
                     new ArrayList<>(), javaFiles, new ArrayList<>()));
         }
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {

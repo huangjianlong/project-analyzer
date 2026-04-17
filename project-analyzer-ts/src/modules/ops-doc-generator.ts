@@ -106,7 +106,7 @@ export class OpsDocGenerator implements AnalysisModuleInterface {
               results.push({
                 method: 'npm-script',
                 command: `npm run ${key}`,
-                description: `npm script "${key}": ${scripts[key]}`,
+                description: `npm 脚本 "${key}": ${scripts[key]}`,
                 filePath: 'package.json',
                 isInferred: false,
               });
@@ -131,7 +131,7 @@ export class OpsDocGenerator implements AnalysisModuleInterface {
             results.push({
               method: 'main-class',
               command: this.inferRunCommand(ext, relPath),
-              description: `Entry file: ${relPath}`,
+              description: `入口文件: ${relPath}`,
               filePath: relPath,
               isInferred: true,
             });
@@ -150,7 +150,7 @@ export class OpsDocGenerator implements AnalysisModuleInterface {
           results.push({
             method: 'makefile',
             command: `make ${target}`,
-            description: `Makefile target: ${target}`,
+            description: `Makefile 目标: ${target}`,
             filePath: 'Makefile',
             isInferred: false,
           });
@@ -249,7 +249,7 @@ export class OpsDocGenerator implements AnalysisModuleInterface {
       ports,
       volumes,
       envVars,
-      description: baseImage ? `Docker image based on ${baseImage}` : 'Dockerfile configuration',
+      description: baseImage ? `基于 ${baseImage} 的 Docker 镜像` : 'Dockerfile 配置',
     };
   }
 
@@ -286,7 +286,7 @@ export class OpsDocGenerator implements AnalysisModuleInterface {
       volumes,
       envVars,
       services,
-      description: `Docker Compose with ${services.length} service(s): ${services.join(', ') || 'none'}`,
+      description: `Docker Compose 包含 ${services.length} 个服务: ${services.join(', ') || '无'}`,
     };
   }
 
@@ -325,8 +325,8 @@ export class OpsDocGenerator implements AnalysisModuleInterface {
       results.push({
         type: 'jenkins',
         filePath: 'Jenkinsfile',
-        stages: [{ name: 'pipeline', steps: ['See Jenkinsfile for details'] }],
-        description: 'Jenkins pipeline configuration',
+        stages: [{ name: 'pipeline', steps: ['详见 Jenkinsfile'] }],
+        description: 'Jenkins 流水线配置',
       });
     }
 
@@ -367,7 +367,7 @@ export class OpsDocGenerator implements AnalysisModuleInterface {
         type: 'github-actions',
         filePath,
         stages,
-        description: `GitHub Actions workflow: ${name}`,
+        description: `GitHub Actions 工作流: ${name}`,
       };
     } catch {
       return null;
@@ -398,7 +398,7 @@ export class OpsDocGenerator implements AnalysisModuleInterface {
         type: 'gitlab-ci',
         filePath,
         stages,
-        description: `GitLab CI pipeline with stages: ${stageList.join(', ') || 'default'}`,
+        description: `GitLab CI 流水线，阶段: ${stageList.join(', ') || '默认'}`,
       };
     } catch {
       return null;
@@ -528,16 +528,16 @@ export class OpsDocGenerator implements AnalysisModuleInterface {
 
   private inferConfigDescription(key: string): string {
     const lower = key.toLowerCase();
-    if (lower.includes('host')) return 'Host address';
-    if (lower.includes('port')) return 'Port number';
-    if (lower.includes('password') || lower.includes('secret')) return 'Secret/password value';
-    if (lower.includes('url') || lower.includes('uri')) return 'Connection URL';
-    if (lower.includes('database') || lower.includes('db')) return 'Database configuration';
-    if (lower.includes('redis')) return 'Redis configuration';
-    if (lower.includes('key') || lower.includes('token')) return 'API key or token';
-    if (lower.includes('log')) return 'Logging configuration';
-    if (lower.includes('timeout')) return 'Timeout setting';
-    return `Configuration: ${key}`;
+    if (lower.includes('host')) return '主机地址';
+    if (lower.includes('port')) return '端口号';
+    if (lower.includes('password') || lower.includes('secret')) return '密码/密钥';
+    if (lower.includes('url') || lower.includes('uri')) return '连接地址';
+    if (lower.includes('database') || lower.includes('db')) return '数据库配置';
+    if (lower.includes('redis')) return 'Redis 配置';
+    if (lower.includes('key') || lower.includes('token')) return 'API 密钥/令牌';
+    if (lower.includes('log')) return '日志配置';
+    if (lower.includes('timeout')) return '超时设置';
+    return `配置项: ${key}`;
   }
 
   private inferRequired(key: string): boolean {

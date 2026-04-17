@@ -369,7 +369,7 @@ export class GoPlugin implements LanguagePlugin {
       modules.push({
         name: pkgName,
         path: dir,
-        description: `Go package: ${relPath}`,
+        description: `Go 包: ${relPath}`,
         isInferred: true,
         keyClasses: [],
         keyFiles: goFiles,

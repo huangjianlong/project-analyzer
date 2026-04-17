@@ -105,7 +105,7 @@ export class BusinessAnalyzer implements AnalysisModuleInterface {
    */
   private inferDescriptions(modules: ModuleInfo[]): void {
     for (const mod of modules) {
-      if (!mod.description || mod.description.startsWith('Module inferred from')) {
+      if (!mod.description || mod.description.startsWith('Module inferred from') || mod.description.startsWith('模块')) {
         mod.description = this.generateDescription(mod);
         mod.isInferred = true;
       }
@@ -120,10 +120,10 @@ export class BusinessAnalyzer implements AnalysisModuleInterface {
 
     if (mod.keyClasses.length > 0) {
       const classHints = mod.keyClasses.slice(0, 3).join(', ');
-      return `${humanName} module (key classes: ${classHints})`;
+      return `${humanName} 模块（核心类: ${classHints}）`;
     }
 
-    return `${humanName} module (inferred from directory structure)`;
+    return `${humanName} 模块（基于目录结构推断）`;
   }
 
   /**

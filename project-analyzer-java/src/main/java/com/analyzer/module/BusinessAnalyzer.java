@@ -76,7 +76,9 @@ public class BusinessAnalyzer implements AnalysisModuleInterface {
     private void inferDescriptions(List<ModuleInfo> modules) {
         for (ModuleInfo mod : modules) {
             if (mod.getDescription() == null || mod.getDescription().startsWith("Module inferred")
-                    || mod.getDescription().startsWith("Module:") || mod.getDescription().startsWith("Java package:")) {
+                    || mod.getDescription().startsWith("基于目录推断的模块")
+                    || mod.getDescription().startsWith("Module:") || mod.getDescription().startsWith("模块:")
+                    || mod.getDescription().startsWith("Java package:") || mod.getDescription().startsWith("Java 包:")) {
                 mod.setDescription(generateDescription(mod));
                 mod.setInferred(true);
             }
@@ -88,9 +90,9 @@ public class BusinessAnalyzer implements AnalysisModuleInterface {
         if (mod.getKeyClasses() != null && !mod.getKeyClasses().isEmpty()) {
             String hints = String.join(", ", mod.getKeyClasses().subList(0,
                     Math.min(3, mod.getKeyClasses().size())));
-            return humanName + " module (key classes: " + hints + ")";
+            return humanName + " 模块（核心类: " + hints + "）";
         }
-        return humanName + " module (inferred from directory structure)";
+        return humanName + " 模块（基于目录结构推断）";
     }
 
     private String humanize(String name) {
@@ -129,7 +131,7 @@ public class BusinessAnalyzer implements AnalysisModuleInterface {
                     dmi.setType(modelType);
                     dmi.setFilePath(filePath);
                     dmi.setFields(fields);
-                    dmi.setDescription(modelType.getValue().toUpperCase() + " class: " + node.getName());
+                    dmi.setDescription(modelType.getValue().toUpperCase() + " 类: " + node.getName());
                     models.add(dmi);
                 }
             }

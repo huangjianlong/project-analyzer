@@ -302,7 +302,7 @@ export class TypeScriptPlugin implements LanguagePlugin {
         modules.push({
           name: entry.name,
           path: modulePath,
-          description: `Module inferred from directory: ${dirName}/${entry.name}`,
+          description: `基于目录推断的模块: ${dirName}/${entry.name}`,
           isInferred: true,
           keyClasses: [],
           keyFiles,
@@ -330,7 +330,7 @@ export class TypeScriptPlugin implements LanguagePlugin {
         modules.push({
           name: entry.name,
           path: dirPath,
-          description: `Module inferred from directory: ${entry.name}`,
+          description: `基于目录推断的模块: ${entry.name}`,
           isInferred: true,
           keyClasses: [],
           keyFiles,

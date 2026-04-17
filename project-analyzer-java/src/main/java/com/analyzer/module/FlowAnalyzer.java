@@ -206,10 +206,10 @@ public class FlowAnalyzer implements AnalysisModuleInterface {
         String epName = ep.getClassName().isEmpty() ? ep.getMethodName()
                 : ep.getClassName() + "." + ep.getMethodName();
         String typeLabel = switch (ep.getType()) {
-            case CONTROLLER -> "HTTP endpoint";
-            case MAIN -> "Application entry point";
-            case EVENT_HANDLER -> "Event handler";
-            default -> "Entry point";
+            case CONTROLLER -> "HTTP 接口";
+            case MAIN -> "应用入口";
+            case EVENT_HANDLER -> "事件处理器";
+            default -> "入口点";
         };
         String httpInfo = ep.getHttpPath() != null ? " (" + ep.getHttpPath() + ")" : "";
         return typeLabel + ": " + epName + httpInfo;

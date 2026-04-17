@@ -145,7 +145,7 @@ export class AiMemoryGenerator implements AnalysisModuleInterface {
         seen.add(term);
         entries.push({
           term,
-          definition: mod.description || `Module: ${term}`,
+          definition: mod.description || `模块: ${term}`,
           relatedCode: [...mod.keyClasses, ...mod.keyFiles],
         });
       }
@@ -158,7 +158,7 @@ export class AiMemoryGenerator implements AnalysisModuleInterface {
           seen.add(cls);
           entries.push({
             term: cls,
-            definition: `Class in module ${mod.name}`,
+            definition: `模块 ${mod.name} 中的类`,
             relatedCode: [cls],
           });
         }

@@ -67,9 +67,9 @@ public class OpsDocGenerator implements AnalysisModuleInterface {
         List<StartupInfo> results = new ArrayList<>();
         // Maven/Gradle
         if (profile.getBuildTool() == ProjectProfile.BuildToolType.MAVEN) {
-            results.add(createStartup("script", "mvn spring-boot:run", "Maven Spring Boot run", "pom.xml", true));
+            results.add(createStartup("script", "mvn spring-boot:run", "Maven Spring Boot 启动", "pom.xml", true));
         } else if (profile.getBuildTool() == ProjectProfile.BuildToolType.GRADLE) {
-            results.add(createStartup("script", "./gradlew bootRun", "Gradle Spring Boot run", "build.gradle", true));
+            results.add(createStartup("script", "./gradlew bootRun", "Gradle Spring Boot 启动", "build.gradle", true));
         }
         // package.json scripts
         Path pkgPath = root.resolve("package.json");
@@ -79,7 +79,7 @@ public class OpsDocGenerator implements AnalysisModuleInterface {
                 for (String script : List.of("start", "dev", "serve")) {
                     if (content.contains("\"" + script + "\"")) {
                         results.add(createStartup("npm-script", "npm run " + script,
-                                "npm script: " + script, "package.json", false));
+                                "npm 脚本 \"" + script + "\":", "package.json", false));
                     }
                 }
             } catch (IOException ignored) {}
@@ -94,7 +94,7 @@ public class OpsDocGenerator implements AnalysisModuleInterface {
                             .ifPresent(p -> {
                                 String rel = root.relativize(p).toString();
                                 results.add(createStartup("main-class", "java -jar target/*.jar",
-                                        "Main class: " + rel, rel, true));
+                                        "主类: " + rel, rel, true));
                             });
                 } catch (IOException ignored) {}
             }
@@ -108,7 +108,7 @@ public class OpsDocGenerator implements AnalysisModuleInterface {
                 Matcher m = p.matcher(content);
                 while (m.find()) {
                     results.add(createStartup("makefile", "make " + m.group(1),
-                            "Makefile target: " + m.group(1), "Makefile", false));
+                            "Makefile 目标: " + m.group(1), "Makefile", false));
                 }
             } catch (IOException ignored) {}
         }
@@ -152,7 +152,7 @@ public class OpsDocGenerator implements AnalysisModuleInterface {
             Matcher env = Pattern.compile("^ENV\\s+(\\S+)", Pattern.CASE_INSENSITIVE).matcher(t);
             if (env.find()) cc.getEnvVars().add(env.group(1));
         }
-        cc.setDescription(cc.getBaseImage() != null ? "Docker image based on " + cc.getBaseImage() : "Dockerfile configuration");
+        cc.setDescription(cc.getBaseImage() != null ? "基于 " + cc.getBaseImage() + " 的 Docker 镜像" : "Dockerfile configuration");
         return cc;
     }
 
@@ -176,7 +176,7 @@ public class OpsDocGenerator implements AnalysisModuleInterface {
                 }
             }
         } catch (Exception ignored) {}
-        cc.setDescription("Docker Compose with " + cc.getServices().size() + " service(s): " + String.join(", ", cc.getServices()));
+        cc.setDescription("Docker Compose 包含 " + cc.getServices().size() + " 个服务: " + String.join(", ", cc.getServices()));
         return cc;
     }
 
@@ -216,7 +216,7 @@ public class OpsDocGenerator implements AnalysisModuleInterface {
                         pipeline.setType("github-actions");
                         pipeline.setFilePath(relPath);
                         pipeline.setStages(stages);
-                        pipeline.setDescription("GitHub Actions workflow: " + doc.getOrDefault("name", relPath));
+                        pipeline.setDescription("GitHub Actions 工作流: " + doc.getOrDefault("name", relPath));
                         results.add(pipeline);
                     } catch (Exception ignored) {}
                 }
@@ -227,15 +227,15 @@ public class OpsDocGenerator implements AnalysisModuleInterface {
         if (Files.exists(gitlabCi)) {
             CiCdPipeline p = new CiCdPipeline();
             p.setType("gitlab-ci"); p.setFilePath(".gitlab-ci.yml");
-            p.setStages(List.of()); p.setDescription("GitLab CI pipeline");
+            p.setStages(List.of()); p.setDescription("GitLab CI 流水线");
             results.add(p);
         }
         // Jenkinsfile
         if (Files.exists(root.resolve("Jenkinsfile"))) {
             CiCdPipeline p = new CiCdPipeline();
             p.setType("jenkins"); p.setFilePath("Jenkinsfile");
-            p.setStages(List.of(new CiCdStage() {{ setName("pipeline"); setSteps(List.of("See Jenkinsfile")); }}));
-            p.setDescription("Jenkins pipeline configuration");
+            p.setStages(List.of(new CiCdStage() {{ setName("pipeline"); setSteps(List.of("详见 Jenkinsfile")); }}));
+            p.setDescription("Jenkins 流水线配置");
             results.add(p);
         }
         return results;
@@ -330,14 +330,16 @@ public class OpsDocGenerator implements AnalysisModuleInterface {
 
     private String inferConfigDescription(String key) {
         String lower = key.toLowerCase();
-        if (lower.contains("host")) return "Host address";
-        if (lower.contains("port")) return "Port number";
-        if (lower.contains("password") || lower.contains("secret")) return "Secret/password value";
-        if (lower.contains("url") || lower.contains("uri")) return "Connection URL";
-        if (lower.contains("database") || lower.contains("db")) return "Database configuration";
-        if (lower.contains("redis")) return "Redis configuration";
-        if (lower.contains("key") || lower.contains("token")) return "API key or token";
-        return "Configuration: " + key;
+        if (lower.contains("host")) return "主机地址";
+        if (lower.contains("port")) return "端口号";
+        if (lower.contains("password") || lower.contains("secret")) return "密码/密钥";
+        if (lower.contains("url") || lower.contains("uri")) return "连接地址";
+        if (lower.contains("database") || lower.contains("db")) return "数据库配置";
+        if (lower.contains("redis")) return "Redis 配置";
+        if (lower.contains("key") || lower.contains("token")) return "API 密钥/令牌";
+        if (lower.contains("log")) return "日志配置";
+        if (lower.contains("timeout")) return "超时设置";
+        return "配置项: " + key;
     }
 
     private boolean inferRequired(String key) {

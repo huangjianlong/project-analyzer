@@ -105,7 +105,7 @@ public class AiMemoryGenerator implements AnalysisModuleInterface {
                 if (seen.add(mod.getName())) {
                     AiMemoryData.GlossaryEntry ge = new AiMemoryData.GlossaryEntry();
                     ge.setTerm(mod.getName());
-                    ge.setDefinition(mod.getDescription() != null ? mod.getDescription() : "Module: " + mod.getName());
+                    ge.setDefinition(mod.getDescription() != null ? mod.getDescription() : "模块: " + mod.getName());
                     List<String> related = new ArrayList<>();
                     if (mod.getKeyClasses() != null) related.addAll(mod.getKeyClasses());
                     if (mod.getKeyFiles() != null) related.addAll(mod.getKeyFiles());

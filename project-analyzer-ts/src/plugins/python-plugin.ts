@@ -310,7 +310,7 @@ export class PythonPlugin implements LanguagePlugin {
         modules.push({
           name: entry.name,
           path: modulePath,
-          description: `Python package: ${dirName === '.' ? '' : dirName + '/'}${entry.name}`,
+          description: `Python 包: ${dirName === '.' ? '' : dirName + '/'}${entry.name}`,
           isInferred: true,
           keyClasses: [],
           keyFiles,

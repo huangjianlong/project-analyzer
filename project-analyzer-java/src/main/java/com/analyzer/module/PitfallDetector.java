@@ -25,9 +25,9 @@ public class PitfallDetector implements AnalysisModuleInterface {
     );
 
     private static final Map<String, DeprecatedInfo> KNOWN_DEPRECATED = Map.of(
-            "commons-logging", new DeprecatedInfo("Consider using SLF4J", "Use slf4j-api"),
-            "log4j", new DeprecatedInfo("Log4j 1.x is EOL", "Use log4j2 or logback"),
-            "junit", new DeprecatedInfo("JUnit 4 is legacy", "Use JUnit 5 (junit-jupiter)")
+            "commons-logging", new DeprecatedInfo("建议使用 SLF4J", "使用 slf4j-api"),
+            "log4j", new DeprecatedInfo("Log4j 1.x 已停止维护", "使用 log4j2 或 logback"),
+            "junit", new DeprecatedInfo("JUnit 4 已过时", "使用 JUnit 5 (junit-jupiter)")
     );
 
     private record DeprecatedInfo(String reason, String alternative) {}
@@ -92,15 +92,15 @@ public class PitfallDetector implements AnalysisModuleInterface {
                 if (lines > thresholds.getMaxMethodLines()) {
                     records.add(new PitfallRecord(PitfallRecord.PitfallCategory.ANTI_PATTERN,
                             PitfallRecord.Severity.MEDIUM, node.getFilePath(), node.getStartLine(),
-                            "Method '" + node.getName() + "' is " + lines + " lines (threshold: " + thresholds.getMaxMethodLines() + ")",
-                            "Consider breaking this method into smaller, focused methods."));
+                            "方法 '" + node.getName() + "' 有 " + lines + " 行（阈值: " + thresholds.getMaxMethodLines() + "）",
+                            "建议将此方法拆分为更小的、职责单一的方法。"));
                 }
                 int depth = measureNestingDepth(node);
                 if (depth > thresholds.getMaxNestingDepth()) {
                     records.add(new PitfallRecord(PitfallRecord.PitfallCategory.ANTI_PATTERN,
                             PitfallRecord.Severity.MEDIUM, node.getFilePath(), node.getStartLine(),
-                            "Method '" + node.getName() + "' has nesting depth " + depth + " (threshold: " + thresholds.getMaxNestingDepth() + ")",
-                            "Consider using early returns or extracting nested logic."));
+                            "方法 '" + node.getName() + "' 嵌套深度为 " + depth + "（阈值: " + thresholds.getMaxNestingDepth() + "）",
+                            "建议使用提前返回、守卫子句或提取嵌套逻辑。"));
                 }
             }
             if (node.getType() == AstNode.AstNodeType.CLASS) {
@@ -111,14 +111,14 @@ public class PitfallDetector implements AnalysisModuleInterface {
                 if (methodCount > thresholds.getMaxClassMethods()) {
                     records.add(new PitfallRecord(PitfallRecord.PitfallCategory.ANTI_PATTERN,
                             PitfallRecord.Severity.HIGH, node.getFilePath(), node.getStartLine(),
-                            "Class '" + node.getName() + "' has " + methodCount + " methods (threshold: " + thresholds.getMaxClassMethods() + ")",
-                            "Consider splitting using Single Responsibility Principle."));
+                            "类 '" + node.getName() + "' 有 " + methodCount + " 个方法（阈值: " + thresholds.getMaxClassMethods() + "）",
+                            "建议按单一职责原则拆分此类。"));
                 }
                 if (classLines > thresholds.getMaxClassLines()) {
                     records.add(new PitfallRecord(PitfallRecord.PitfallCategory.ANTI_PATTERN,
                             PitfallRecord.Severity.HIGH, node.getFilePath(), node.getStartLine(),
-                            "Class '" + node.getName() + "' is " + classLines + " lines (threshold: " + thresholds.getMaxClassLines() + ")",
-                            "Consider extracting functionality into separate classes."));
+                            "类 '" + node.getName() + "' 有 " + classLines + " 行（阈值: " + thresholds.getMaxClassLines() + "）",
+                            "建议将功能提取到独立的类中。"));
                 }
             }
             if (node.getChildren() != null) records.addAll(detectAntiPatterns(node.getChildren()));
@@ -133,7 +133,7 @@ public class PitfallDetector implements AnalysisModuleInterface {
             if (info != null) {
                 records.add(new PitfallRecord(PitfallRecord.PitfallCategory.DEPRECATED_DEP,
                         PitfallRecord.Severity.MEDIUM, "pom.xml", null,
-                        "Dependency '" + dep.getName() + "@" + dep.getVersion() + "': " + info.reason(),
+                        "依赖 '" + dep.getName() + "@" + dep.getVersion() + "' 已废弃: " + info.reason(),
                         info.alternative()));
             }
         }
@@ -156,8 +156,8 @@ public class PitfallDetector implements AnalysisModuleInterface {
                         if (desc.length() > 120) desc = desc.substring(0, 120);
                         records.add(new PitfallRecord(PitfallRecord.PitfallCategory.TODO_MARKER,
                                 sev, relPath, i + 1,
-                                marker + " marker found: " + desc,
-                                "Address this " + marker + " comment or create a tracking issue."));
+                                marker + " 标记发现: " + desc,
+                                "请处理此 " + marker + " 注释或创建跟踪问题。"));
                     }
                 }
             } catch (IOException ignored) {}
@@ -179,20 +179,20 @@ public class PitfallDetector implements AnalysisModuleInterface {
                     if (HARDCODED_URL_RE.matcher(line).find() && !isImportLine(line)) {
                         records.add(new PitfallRecord(PitfallRecord.PitfallCategory.HARDCODED_CONFIG,
                                 PitfallRecord.Severity.MEDIUM, relPath, i + 1,
-                                "Hardcoded URL detected: " + trimmed.substring(0, Math.min(120, trimmed.length())),
-                                "Move URLs to configuration files or environment variables."));
+                                "检测到硬编码 URL: " + trimmed.substring(0, Math.min(120, trimmed.length())),
+                                "建议将 URL 移至配置文件或环境变量。"));
                     }
                     if (HARDCODED_IP_RE.matcher(line).find() && !line.contains("127.0.0.1") && !line.contains("0.0.0.0")) {
                         records.add(new PitfallRecord(PitfallRecord.PitfallCategory.HARDCODED_CONFIG,
                                 PitfallRecord.Severity.MEDIUM, relPath, i + 1,
-                                "Hardcoded IP address detected: " + trimmed.substring(0, Math.min(120, trimmed.length())),
-                                "Move IP addresses to configuration files or environment variables."));
+                                "检测到硬编码 IP 地址: " + trimmed.substring(0, Math.min(120, trimmed.length())),
+                                "建议将 URL 移至配置文件或环境变量。"));
                     }
                     if (HARDCODED_API_KEY_RE.matcher(line).find()) {
                         records.add(new PitfallRecord(PitfallRecord.PitfallCategory.HARDCODED_CONFIG,
                                 PitfallRecord.Severity.MEDIUM, relPath, i + 1,
-                                "Possible hardcoded secret detected",
-                                "Move secrets to environment variables or a secrets manager."));
+                                "检测到可能的硬编码密钥",
+                                "建议将密钥移至环境变量或密钥管理器。"));
                     }
                 }
             } catch (IOException ignored) {}
@@ -219,8 +219,8 @@ public class PitfallDetector implements AnalysisModuleInterface {
             if (!hasTest) {
                 records.add(new PitfallRecord(PitfallRecord.PitfallCategory.MISSING_TEST,
                         PitfallRecord.Severity.LOW, mod.getPath(), null,
-                        "Module '" + mod.getName() + "' has no corresponding test files",
-                        "Add unit tests for this module to improve code reliability."));
+                        "模块 '" + mod.getName() + "' 没有对应的测试文件",
+                        "建议为此模块添加单元测试以提高代码可靠性。"));
             }
         }
         return records;

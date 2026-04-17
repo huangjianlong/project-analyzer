@@ -364,7 +364,7 @@ export class FlowAnalyzer implements AnalysisModuleInterface {
           filePath: target.filePath,
           line: target.startLine,
           isExternal: false,
-          description: `Calls ${target.className ? target.className + '.' : ''}${target.methodName}`,
+          description: `调用 ${target.className ? target.className + '.' : ''}${target.methodName}`,
         });
 
         // Recurse
@@ -378,7 +378,7 @@ export class FlowAnalyzer implements AnalysisModuleInterface {
           filePath: entry.filePath,
           line: call.line,
           isExternal: true,
-          description: `External call: ${call.className ? call.className + '.' : ''}${call.methodName}`,
+          description: `外部调用: ${call.className ? call.className + '.' : ''}${call.methodName}`,
         });
       }
     }
@@ -455,20 +455,20 @@ export class FlowAnalyzer implements AnalysisModuleInterface {
 
     const typeLabel =
       entryPoint.type === 'controller'
-        ? 'HTTP endpoint'
+        ? 'HTTP 接口'
         : entryPoint.type === 'main'
-          ? 'Application entry point'
+          ? '应用入口'
           : entryPoint.type === 'event-handler'
-            ? 'Event handler'
-            : 'Entry point';
+            ? '事件处理器'
+            : '入口点';
 
     const httpInfo = entryPoint.httpPath ? ` (${entryPoint.httpPath})` : '';
     const chainInfo =
       callChain.length > 0
-        ? `, call chain depth: ${Math.max(...callChain.map((c) => c.depth))}`
-        : ', no traced calls';
+        ? `，调用链深度: ${Math.max(...callChain.map((c) => c.depth))}`
+        : '，无追踪调用';
     const externalCount = callChain.filter((c) => c.isExternal).length;
-    const externalInfo = externalCount > 0 ? `, ${externalCount} external dependency call(s)` : '';
+    const externalInfo = externalCount > 0 ? `，${externalCount} 个外部依赖调用` : '';
 
     return `${typeLabel}: ${epName}${httpInfo}${chainInfo}${externalInfo}`;
   }

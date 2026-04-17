@@ -116,7 +116,7 @@ export class GenericPlugin implements LanguagePlugin {
       modules.push({
         name: dirName,
         path: dirPath,
-        description: `Module inferred from directory: ${dirName}`,
+        description: `基于目录推断的模块: ${dirName}`,
         isInferred: true,
         keyClasses: [],
         keyFiles,

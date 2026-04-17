@@ -85,7 +85,7 @@ public class GenericPlugin implements LanguagePlugin {
                     List<String> keyFiles = collectSourceFiles(entry);
                     if (!keyFiles.isEmpty()) {
                         modules.add(new ModuleInfo(name, entry.toString(),
-                                "Module inferred from directory: " + name, true,
+                                "基于目录推断的模块: " + name, true,
                                 new ArrayList<>(), keyFiles, new ArrayList<>()));
                     }
                 }
