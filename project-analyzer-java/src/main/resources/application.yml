@@ -22,3 +22,17 @@ analyzer:
     max-class-methods: 20
     max-class-lines: 500
     max-file-lines: 1000
+
+  # AI 大模型配置（LM Studio / OpenAI 兼容接口）
+  ai:
+    enabled: true
+    base-url: http://localhost:1234/v1
+    model: qwen3-8b
+    # api-key 留空即可（LM Studio 本地不需要）
+    api-key: ""
+    # 请求超时（秒）
+    timeout: 120
+    # 最大 token 数
+    max-tokens: 256
+    # 温度（0-1，越低越确定）
+    temperature: 0.3

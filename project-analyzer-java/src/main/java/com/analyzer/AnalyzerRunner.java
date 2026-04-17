@@ -1,5 +1,7 @@
 package com.analyzer;
 
+import com.analyzer.ai.AiEnhancedAnalyzer;
+import com.analyzer.ai.LlmService;
 import com.analyzer.error.AnalysisException;
 import com.analyzer.model.OpsConfig;
 import org.springframework.boot.CommandLineRunner;
@@ -59,6 +61,44 @@ public class AnalyzerRunner implements CommandLineRunner {
         try {
             var analyzer = new ProjectAnalyzer(msg -> System.out.println("  ⏳ " + msg));
             var result = analyzer.run(config);
+
+            // AI 增强分析
+            if (props.getAi().isEnabled()) {
+                var llmService = new LlmService(props.getAi());
+                if (llmService.isAvailable()) {
+                    System.out.println("  🤖 AI 大模型已连接 (" + props.getAi().getModel() + ")");
+                    var aiAnalyzer = new AiEnhancedAnalyzer(llmService);
+
+                    // 增强业务模块描述
+                    System.out.println("  🤖 AI 分析业务模块...");
+                    aiAnalyzer.enhanceBusinessModules(result.getReport().getBusiness());
+
+                    // 增强 API 描述
+                    System.out.println("  🤖 AI 分析接口语义...");
+                    aiAnalyzer.enhanceApiDescriptions(result.getReport().getApis());
+
+                    // 增强坑点建议
+                    System.out.println("  🤖 AI 生成修复建议...");
+                    aiAnalyzer.enhancePitfallSuggestions(result.getReport().getPitfalls());
+
+                    // 生成项目总结
+                    System.out.println("  🤖 AI 生成项目总结...");
+                    String summary = aiAnalyzer.generateProjectSummary(result.getReport());
+                    if (summary != null) {
+                        System.out.println("  📝 " + summary);
+                    }
+
+                    // AI 增强后重新生成报告
+                    System.out.println("  ⏳ 重新生成分析报告...");
+                    var reportGen = new com.analyzer.report.ReportGenerator();
+                    var newReportFiles = reportGen.generate(result.getReport(), config.getOutputDir());
+                    result = new ProjectAnalyzer.AnalyzerResult(
+                            result.getReport(), newReportFiles,
+                            result.getErrors(), result.getWarnings());
+                } else {
+                    System.out.println("  ⚠️ AI 大模型不可用，跳过 AI 增强分析");
+                }
+            }
 
             // 输出警告
             for (var w : result.getWarnings()) {

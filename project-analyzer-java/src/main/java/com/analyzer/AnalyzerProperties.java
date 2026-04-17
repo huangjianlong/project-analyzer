@@ -23,6 +23,9 @@ public class AnalyzerProperties {
     /** 反模式检测阈值 */
     private Thresholds thresholds = new Thresholds();
 
+    /** AI 大模型配置 */
+    private Ai ai = new Ai();
+
     // ── getters / setters ──
 
     public String getProjectPath() { return projectPath; }
@@ -39,6 +42,9 @@ public class AnalyzerProperties {
 
     public Thresholds getThresholds() { return thresholds; }
     public void setThresholds(Thresholds thresholds) { this.thresholds = thresholds; }
+
+    public Ai getAi() { return ai; }
+    public void setAi(Ai ai) { this.ai = ai; }
 
     public static class Thresholds {
         private int maxMethodLines = 80;
@@ -61,5 +67,36 @@ public class AnalyzerProperties {
 
         public int getMaxFileLines() { return maxFileLines; }
         public void setMaxFileLines(int v) { this.maxFileLines = v; }
+    }
+
+    public static class Ai {
+        private boolean enabled = false;
+        private String baseUrl = "http://localhost:1234/v1";
+        private String model = "qwen3-8b";
+        private String apiKey = "";
+        private int timeout = 120;
+        private int maxTokens = 2048;
+        private double temperature = 0.3;
+
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+        public String getBaseUrl() { return baseUrl; }
+        public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
+
+        public String getModel() { return model; }
+        public void setModel(String model) { this.model = model; }
+
+        public String getApiKey() { return apiKey; }
+        public void setApiKey(String apiKey) { this.apiKey = apiKey; }
+
+        public int getTimeout() { return timeout; }
+        public void setTimeout(int timeout) { this.timeout = timeout; }
+
+        public int getMaxTokens() { return maxTokens; }
+        public void setMaxTokens(int maxTokens) { this.maxTokens = maxTokens; }
+
+        public double getTemperature() { return temperature; }
+        public void setTemperature(double temperature) { this.temperature = temperature; }
     }
 }
