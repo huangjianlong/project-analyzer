@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr:*)",
+      "Bash(mvn compile:*)",
+      "Bash(pip show:*)",
+      "Bash(python:*)",
+      "Bash(timeout 5 python:*)",
+      "Bash(printf:*)"
+    ]
+  }
+}

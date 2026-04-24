@@ -199,10 +199,13 @@ public class AiEnhancedAnalyzer {
         if (s.isEmpty() && response.contains("</think>")) {
             s = response.substring(response.lastIndexOf("</think>") + "</think>".length()).trim();
         }
-        // 去掉 markdown 粗体/斜体
-        s = s.replaceAll("[*_`#]", "").trim();
-        // 去掉开头换行
-        s = s.replaceAll("^[\\s\\n]+", "");
+        // 去掉 markdown 成对格式标记（只处理成对的，避免误伤 C#、**kwargs 等合法内容）
+        s = s.replaceAll("\\*\\*(.+?)\\*\\*", "$1");   // **粗体**
+        s = s.replaceAll("\\*(.+?)\\*", "$1");          // *斜体*
+        s = s.replaceAll("`(.+?)`", "$1");              // `行内代码`
+        s = s.replaceAll("(?m)^#{1,6}\\s*", "");        // 行首标题
+        // 去掉常见前导格式字符（序号后的 . 、、等）
+        s = s.trim();
         // 取第一行有意义的内容
         for (String line : s.split("\n")) {
             String t = line.trim();

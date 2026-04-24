@@ -59,10 +59,10 @@ public class ReportGenerator {
         readme.append("## 报告列表\n\n");
         readme.append("| 报告 | 文件 | 说明 |\n|------|------|------|\n");
         for (Desc d : descriptors) {
-            readme.append("| ").append(d.title).append(" | [").append(d.name).append("](./").append(d.name).append(") | ").append(d.title).append(" |\n");
+            readme.append("| ").append(d.title).append(" | [").append(d.name).append("](").append(d.name).append(") | ").append(d.title).append(" |\n");
         }
-        readme.append("| AI 项目记忆 (JSON) | [AI知识库.json](./AI知识库.json) | AI 项目记忆 (JSON) |\n");
-        readme.append("| Claude Code 上下文 | [CLAUDE.md](./CLAUDE.md) | Claude Code 项目上下文 |\n");
+        readme.append("| AI 项目记忆 (JSON) | [AI知识库.json](AI知识库.json) | AI 项目记忆 (JSON) |\n");
+        readme.append("| Claude Code 上下文 | [CLAUDE.md](CLAUDE.md) | Claude Code 项目上下文 |\n");
         Path readmePath = Path.of(dir, "报告索引.md");
         Files.writeString(readmePath, readme.toString());
 

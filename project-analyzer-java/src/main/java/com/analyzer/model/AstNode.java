@@ -19,6 +19,8 @@ public class AstNode {
     private String returnType;           // nullable
     private String superClass;           // nullable
     private List<String> interfaces;     // nullable
+    private int nestingDepth;            // 控制流嵌套深度（用于反模式检测）
+    private List<String> calledMethodNames; // 方法体内调用的方法名列表
 
     public AstNode() {}
 
@@ -57,6 +59,12 @@ public class AstNode {
 
     public List<String> getInterfaces() { return interfaces; }
     public void setInterfaces(List<String> interfaces) { this.interfaces = interfaces; }
+
+    public int getNestingDepth() { return nestingDepth; }
+    public void setNestingDepth(int nestingDepth) { this.nestingDepth = nestingDepth; }
+
+    public List<String> getCalledMethodNames() { return calledMethodNames; }
+    public void setCalledMethodNames(List<String> calledMethodNames) { this.calledMethodNames = calledMethodNames; }
 
     public enum AstNodeType {
         CLASS("class"),

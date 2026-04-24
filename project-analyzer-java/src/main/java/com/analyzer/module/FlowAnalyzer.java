@@ -225,7 +225,46 @@ public class FlowAnalyzer implements AnalysisModuleInterface {
         if (depth > MAX_DEPTH) return;
         String key = entry.filePath() + ":" + entry.className() + "." + entry.methodName();
         if (!visited.add(key)) return;
-        // Simple heuristic: no deep call tracing without source analysis
+
+        // 添加当前调用步骤
+        FlowTrace.CallStep step = new FlowTrace.CallStep();
+        step.setDepth(depth);
+        step.setClassName(entry.className());
+        step.setMethodName(entry.methodName());
+        step.setFilePath(entry.filePath());
+        step.setLine(entry.startLine());
+        step.setExternal(false);
+        chain.add(step);
+
+        if (chain.size() > 100) return; // 安全限制
+
+        // 递归追踪被调用的方法
+        if (entry.node() != null && entry.node().getCalledMethodNames() != null) {
+            for (String calledName : entry.node().getCalledMethodNames()) {
+                List<FunctionEntry> callees = index.get(calledName.toLowerCase());
+                if (callees != null) {
+                    for (FunctionEntry callee : callees) {
+                        // 优先选择同文件或同类的实现
+                        FunctionEntry bestMatch = callee;
+                        if (callee.filePath().equals(entry.filePath())) {
+                            bestMatch = callee;
+                        }
+                        traceNode(bestMatch, depth + 1, index, chain, visited);
+                        if (chain.size() > 100) return;
+                    }
+                } else {
+                    // 无法解析的方法调用标记为外部调用
+                    FlowTrace.CallStep extStep = new FlowTrace.CallStep();
+                    extStep.setDepth(depth + 1);
+                    extStep.setClassName("");
+                    extStep.setMethodName(calledName);
+                    extStep.setFilePath(entry.filePath());
+                    extStep.setLine(entry.startLine());
+                    extStep.setExternal(true);
+                    chain.add(extStep);
+                }
+            }
+        }
     }
 
     private String generateFlowDescription(FlowTrace.EntryPoint ep, List<FlowTrace.CallStep> chain) {

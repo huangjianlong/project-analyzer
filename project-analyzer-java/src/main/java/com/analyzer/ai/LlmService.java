@@ -115,11 +115,30 @@ public class LlmService {
     }
 
     /**
-     * 检查 LM Studio 是否可用。
+     * 检查 AI 服务是否可用（通过 /v1/models 端点做真实连接检测）。
+     * 连接失败时返回 false，由调用方降级为默认模式扫描。
      */
     public boolean isAvailable() {
         if (!config.isEnabled()) return false;
-        // 跳过预检查，直接返回 true，在实际请求时处理失败
-        return true;
+        try {
+            String url = config.getBaseUrl().replaceAll("/+$", "") + "/models";
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(5))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString());
+            boolean ok = response.statusCode() == 200;
+            if (!ok) {
+                System.err.println("  ⚠️ AI 连接检测失败 (HTTP " + response.statusCode() + "): "
+                        + response.body().substring(0, Math.min(200, response.body().length())));
+            }
+            return ok;
+        } catch (Exception e) {
+            System.err.println("  ⚠️ AI 服务不可用 (" + e.getMessage() + ")，将使用默认模式扫描");
+            return false;
+        }
     }
 }

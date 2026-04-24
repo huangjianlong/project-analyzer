@@ -120,7 +120,7 @@ public class BusinessAnalyzer implements AnalysisModuleInterface {
                 for (AstNode node : plugin.parseFile(Path.of(filePath))) {
                     if (node.getType() != AstNode.AstNodeType.CLASS
                             && node.getType() != AstNode.AstNodeType.INTERFACE) continue;
-                    DataModelInfo.DataModelType modelType = classifyModelType(node.getName(), filePath);
+                    DataModelInfo.DataModelType modelType = classifyModelType(node.getName(), filePath, node.getAnnotations());
                     if (modelType == null) continue;
                     String key = filePath + ":" + node.getName();
                     if (!seen.add(key)) continue;
@@ -139,7 +139,19 @@ public class BusinessAnalyzer implements AnalysisModuleInterface {
         return models;
     }
 
-    private DataModelInfo.DataModelType classifyModelType(String className, String filePath) {
+    private DataModelInfo.DataModelType classifyModelType(String className, String filePath,
+                                                           List<AstNode.Annotation> annotations) {
+        // 优先检查注解（比命名模式更可靠）
+        if (annotations != null) {
+            boolean hasEntity = false;
+            for (AstNode.Annotation ann : annotations) {
+                String name = ann.getName().toLowerCase();
+                if ("entity".equals(name) || "table".equals(name) || "document".equals(name)) {
+                    hasEntity = true;
+                }
+            }
+            if (hasEntity) return DataModelInfo.DataModelType.ENTITY;
+        }
         for (ModelPattern mp : DATA_MODEL_PATTERNS) {
             if (mp.pattern().matcher(className).find()) return mp.type();
         }

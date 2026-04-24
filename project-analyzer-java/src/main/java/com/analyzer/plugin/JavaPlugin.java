@@ -6,6 +6,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
+import com.github.javaparser.ast.stmt.*;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -13,7 +14,19 @@ import java.util.*;
 import java.util.regex.*;
 import java.util.stream.Stream;
 
+import javax.xml.parsers.*;
+import org.w3c.dom.*;
+import java.io.File;
+
 public class JavaPlugin implements LanguagePlugin {
+
+    /** 文件解析缓存：相同文件只解析一次 */
+    private final Map<Path, List<AstNode>> parseCache = new HashMap<>();
+
+    // 日志包装，便于统一控制
+    private static void logWarn(String msg, Object... args) {
+        System.err.println("  ⚠️ [JavaPlugin] " + String.format(msg, args));
+    }
 
     private static final Set<String> IGNORED_DIRS = Set.of(
             "node_modules", ".git", "dist", "build", "__pycache__",
@@ -68,8 +81,12 @@ public class JavaPlugin implements LanguagePlugin {
 
     @Override
     public List<AstNode> parseFile(Path filePath) {
+        if (!filePath.toString().endsWith(".java")) return List.of();
+        // 命中缓存直接返回
+        if (parseCache.containsKey(filePath)) {
+            return parseCache.get(filePath);
+        }
         List<AstNode> nodes = new ArrayList<>();
-        if (!filePath.toString().endsWith(".java")) return nodes;
         try {
             CompilationUnit cu = StaticJavaParser.parse(filePath);
             String fileStr = filePath.toString();
@@ -77,9 +94,15 @@ public class JavaPlugin implements LanguagePlugin {
             for (TypeDeclaration<?> type : cu.getTypes()) {
                 nodes.add(convertTypeDeclaration(type, fileStr));
             }
-        } catch (Exception ignored) {}
+            parseCache.put(filePath, nodes);
+        } catch (Exception e) {
+            logWarn("解析文件失败: %s - %s", filePath, e.getMessage());
+        }
         return nodes;
     }
+
+    /** 清除解析缓存（可选） */
+    public void clearCache() { parseCache.clear(); }
 
     private AstNode convertTypeDeclaration(TypeDeclaration<?> type, String filePath) {
         AstNode node = new AstNode();
@@ -145,6 +168,12 @@ public class JavaPlugin implements LanguagePlugin {
             }).toList());
             return param;
         }).toList());
+        // 提取方法体内调用的方法名（用于调用链追踪）
+        List<String> calledMethods = new ArrayList<>();
+        md.walk(MethodCallExpr.class, mce -> calledMethods.add(mce.getNameAsString()));
+        node.setCalledMethodNames(calledMethods);
+        // 计算真实的控制流嵌套深度（用于反模式检测）
+        node.setNestingDepth(measureNestingDepth(md));
         return node;
     }
 
@@ -198,6 +227,29 @@ public class JavaPlugin implements LanguagePlugin {
         return attrs;
     }
 
+    /** 计算方法体内真实的控制流嵌套深度（if/for/while/do/switch/try） */
+    private int measureNestingDepth(MethodDeclaration md) {
+        // 遍历所有节点，对每个节点统计其控制流祖先数
+        int[] maxDepth = {0};
+        md.walk(node -> {
+            if (node == md) return; // 跳过方法本身
+            int depth = 0;
+            com.github.javaparser.ast.Node parent = node.getParentNode().orElse(null);
+            while (parent != null && parent != md) {
+                if (isControlFlowNode(parent)) depth++;
+                parent = parent.getParentNode().orElse(null);
+            }
+            maxDepth[0] = Math.max(maxDepth[0], depth);
+        });
+        return maxDepth[0];
+    }
+
+    private boolean isControlFlowNode(com.github.javaparser.ast.Node node) {
+        return node instanceof IfStmt || node instanceof ForStmt
+                || node instanceof WhileStmt || node instanceof DoStmt
+                || node instanceof SwitchStmt || node instanceof TryStmt;
+    }
+
     @Override
     public List<Dependency> extractDependencies(Path projectRoot) {
         List<Dependency> deps = new ArrayList<>();
@@ -215,22 +267,85 @@ public class JavaPlugin implements LanguagePlugin {
     private List<Dependency> parsePomXml(Path pomPath) {
         List<Dependency> deps = new ArrayList<>();
         try {
-            String content = Files.readString(pomPath);
-            Pattern depPattern = Pattern.compile(
-                    "<dependency>\\s*<groupId>(.*?)</groupId>\\s*<artifactId>(.*?)</artifactId>\\s*(?:<version>(.*?)</version>)?\\s*(?:<scope>(.*?)</scope>)?",
-                    Pattern.DOTALL);
-            Matcher m = depPattern.matcher(content);
-            while (m.find()) {
-                String groupId = m.group(1).trim();
-                String artifactId = m.group(2).trim();
-                String version = m.group(3) != null ? m.group(3).trim() : "";
-                String scope = m.group(4) != null ? m.group(4).trim() : "compile";
-                deps.add(new Dependency(artifactId, version, groupId,
-                        categorizeDependency(artifactId, groupId),
-                        Dependency.DependencyScope.fromValue(scope)));
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            // 禁用 DTD 加载以加速解析并避免网络请求
+            factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(pomPath.toFile());
+            doc.getDocumentElement().normalize();
+
+            // 解析 <dependencies> 区域
+            NodeList depNodes = doc.getElementsByTagName("dependency");
+            // 从 <dependencyManagement> 中找 <dependency> 来排除
+            Set<String> managedKeys = extractManagedDependencyKeys(doc);
+
+            for (int i = 0; i < depNodes.getLength(); i++) {
+                Node depNode = depNodes.item(i);
+                // 跳过 <dependencyManagement> 中的依赖
+                if (isInDependencyManagement(depNode)) continue;
+
+                String groupId = getChildText(depNode, "groupId");
+                String artifactId = getChildText(depNode, "artifactId");
+                String version = getChildText(depNode, "version");
+                String scope = getChildText(depNode, "scope");
+                if (groupId == null || artifactId == null) continue;
+                if (version == null || version.isEmpty()) {
+                    // 尝试从 <dependencyManagement> 中获取版本
+                    String managedKey = groupId + ":" + artifactId;
+                    if (managedKeys.contains(managedKey)) version = "";
+                }
+                deps.add(new Dependency(artifactId.trim(), version != null ? version.trim() : "",
+                        groupId.trim(), categorizeDependency(artifactId, groupId),
+                        scope != null ? Dependency.DependencyScope.fromValue(scope.trim())
+                                : Dependency.DependencyScope.COMPILE));
             }
-        } catch (IOException ignored) {}
+        } catch (Exception e) {
+            logWarn("解析 pom.xml 失败: %s - %s", pomPath, e.getMessage());
+        }
         return deps;
+    }
+
+    private Set<String> extractManagedDependencyKeys(Document doc) {
+        Set<String> keys = new HashSet<>();
+        NodeList mgmtList = doc.getElementsByTagName("dependencyManagement");
+        for (int i = 0; i < mgmtList.getLength(); i++) {
+            Node mgmt = mgmtList.item(i);
+            NodeList deps = mgmt.getChildNodes();
+            for (int j = 0; j < deps.getLength(); j++) {
+                Node depMgmt = deps.item(j);
+                if ("dependencies".equals(depMgmt.getNodeName())) {
+                    for (int k = 0; k < depMgmt.getChildNodes().getLength(); k++) {
+                        Node dep = depMgmt.getChildNodes().item(k);
+                        if ("dependency".equals(dep.getNodeName())) {
+                            String g = getChildText(dep, "groupId");
+                            String a = getChildText(dep, "artifactId");
+                            if (g != null && a != null) keys.add(g.trim() + ":" + a.trim());
+                        }
+                    }
+                }
+            }
+        }
+        return keys;
+    }
+
+    private boolean isInDependencyManagement(Node depNode) {
+        Node parent = depNode.getParentNode();
+        while (parent != null) {
+            if ("dependencyManagement".equals(parent.getNodeName())) return true;
+            parent = parent.getParentNode();
+        }
+        return false;
+    }
+
+    private String getChildText(Node parent, String childName) {
+        NodeList list = parent.getChildNodes();
+        for (int i = 0; i < list.getLength(); i++) {
+            Node node = list.item(i);
+            if (childName.equals(node.getNodeName())) {
+                return node.getTextContent();
+            }
+        }
+        return null;
     }
 
     private List<Dependency> parseBuildGradle(Path gradlePath) {
@@ -254,7 +369,9 @@ public class JavaPlugin implements LanguagePlugin {
                 deps.add(new Dependency(artifact, version, group,
                         categorizeDependency(artifact, group), scope));
             }
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            logWarn("解析 build.gradle 失败: %s - %s", gradlePath, e.getMessage());
+        }
         return deps;
     }
 
@@ -281,7 +398,9 @@ public class JavaPlugin implements LanguagePlugin {
                     }
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            logWarn("识别 API 端点失败: %s - %s", filePath, e.getMessage());
+        }
         return endpoints;
     }
 
@@ -300,61 +419,106 @@ public class JavaPlugin implements LanguagePlugin {
     private void extractEndpointsFromMethod(MethodDeclaration md, String className,
                                             String basePath, String filePath,
                                             List<ApiEndpoint> endpoints) {
+        String methodPath = "";
+        boolean hasRequestMapping = false;
+        Map<String, String> requestMappingAttrs = null;
+
         for (AnnotationExpr ann : md.getAnnotations()) {
             String annName = ann.getNameAsString();
-            ApiEndpoint.HttpMethod httpMethod = null;
-            String methodPath = "";
+            Map<String, String> attrs = extractAnnotationAttributes(ann);
 
             if (SPRING_MVC_ANNOTATIONS.contains(annName)) {
-                Map<String, String> attrs = extractAnnotationAttributes(ann);
                 methodPath = attrs.getOrDefault("value", attrs.getOrDefault("path", ""));
-                httpMethod = switch (annName) {
-                    case "GetMapping" -> ApiEndpoint.HttpMethod.GET;
-                    case "PostMapping" -> ApiEndpoint.HttpMethod.POST;
-                    case "PutMapping" -> ApiEndpoint.HttpMethod.PUT;
-                    case "DeleteMapping" -> ApiEndpoint.HttpMethod.DELETE;
-                    case "PatchMapping" -> ApiEndpoint.HttpMethod.PATCH;
-                    case "RequestMapping" -> {
-                        String m = attrs.getOrDefault("method", "GET");
-                        yield ApiEndpoint.HttpMethod.fromValue(
-                                m.replace("RequestMethod.", "").trim());
-                    }
-                    default -> ApiEndpoint.HttpMethod.GET;
-                };
+
+                if ("RequestMapping".equals(annName)) {
+                    requestMappingAttrs = attrs;
+                    hasRequestMapping = true;
+                } else {
+                    // @GetMapping / @PostMapping 等 → 单一方法
+                    ApiEndpoint.HttpMethod httpMethod = switch (annName) {
+                        case "GetMapping" -> ApiEndpoint.HttpMethod.GET;
+                        case "PostMapping" -> ApiEndpoint.HttpMethod.POST;
+                        case "PutMapping" -> ApiEndpoint.HttpMethod.PUT;
+                        case "DeleteMapping" -> ApiEndpoint.HttpMethod.DELETE;
+                        case "PatchMapping" -> ApiEndpoint.HttpMethod.PATCH;
+                        default -> ApiEndpoint.HttpMethod.GET;
+                    };
+                    addEndpoint(endpoints, md, className, basePath, filePath, methodPath, httpMethod);
+                    return; // 只处理一个注解
+                }
             } else if (JAXRS_ANNOTATIONS.contains(annName)) {
-                if ("Path".equals(annName)) continue; // Path is for base path
-                httpMethod = ApiEndpoint.HttpMethod.fromValue(annName);
-                // Check for @Path on method
+                if ("Path".equals(annName)) continue;
+                ApiEndpoint.HttpMethod httpMethod = ApiEndpoint.HttpMethod.fromValue(annName);
                 for (AnnotationExpr ma : md.getAnnotations()) {
                     if ("Path".equals(ma.getNameAsString())) {
                         Map<String, String> pa = extractAnnotationAttributes(ma);
                         methodPath = pa.getOrDefault("value", "");
                     }
                 }
-            }
-
-            if (httpMethod != null) {
-                String fullPath = basePath + methodPath;
-                if (fullPath.isEmpty()) fullPath = "/";
-
-                ApiEndpoint ep = new ApiEndpoint();
-                ep.setPath(fullPath);
-                ep.setMethod(httpMethod);
-                ep.setHandlerClass(className);
-                ep.setHandlerMethod(md.getNameAsString());
-                ep.setParameters(md.getParameters().stream().map(p -> {
-                    ApiEndpoint.ApiParameter param = new ApiEndpoint.ApiParameter();
-                    param.setName(p.getNameAsString());
-                    param.setType(p.getTypeAsString());
-                    param.setIn(inferParameterIn(p));
-                    param.setRequired(true);
-                    return param;
-                }).toList());
-                ep.setResponseType(md.getTypeAsString());
-                ep.setTags(new ArrayList<>());
-                endpoints.add(ep);
+                addEndpoint(endpoints, md, className, basePath, filePath, methodPath, httpMethod);
+                return;
             }
         }
+
+        // @RequestMapping 特殊处理：无 method = 所有方法；数组 = 拆分成多个
+        if (hasRequestMapping && requestMappingAttrs != null) {
+            String methodAttr = requestMappingAttrs.get("method");
+            String path = requestMappingAttrs.getOrDefault("value",
+                    requestMappingAttrs.getOrDefault("path", ""));
+
+            if (methodAttr == null || methodAttr.isEmpty()) {
+                // 没有指定 method → 为每个 HTTP 方法生成一个端点
+                for (ApiEndpoint.HttpMethod m : ApiEndpoint.HttpMethod.values()) {
+                    addEndpoint(endpoints, md, className, basePath, filePath, path, m);
+                }
+            } else {
+                // 解析 method 数组：{RequestMethod.POST, RequestMethod.GET} 或 "POST"
+                for (ApiEndpoint.HttpMethod m : parseHttpMethods(methodAttr)) {
+                    addEndpoint(endpoints, md, className, basePath, filePath, path, m);
+                }
+            }
+        }
+    }
+
+    private List<ApiEndpoint.HttpMethod> parseHttpMethods(String methodAttr) {
+        String cleaned = methodAttr.replaceAll("[{}]", "").replace("RequestMethod.", "");
+        String[] parts = cleaned.split(",");
+        List<ApiEndpoint.HttpMethod> result = new ArrayList<>();
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                try {
+                    result.add(ApiEndpoint.HttpMethod.fromValue(trimmed));
+                } catch (Exception e) {
+                    logWarn("无法解析 HTTP 方法: %s", trimmed);
+                }
+            }
+        }
+        return result.isEmpty() ? List.of(ApiEndpoint.HttpMethod.GET) : result;
+    }
+
+    private void addEndpoint(List<ApiEndpoint> endpoints, MethodDeclaration md,
+                             String className, String basePath, String filePath,
+                             String methodPath, ApiEndpoint.HttpMethod httpMethod) {
+        String fullPath = basePath + methodPath;
+        if (fullPath.isEmpty()) fullPath = "/";
+
+        ApiEndpoint ep = new ApiEndpoint();
+        ep.setPath(fullPath);
+        ep.setMethod(httpMethod);
+        ep.setHandlerClass(className);
+        ep.setHandlerMethod(md.getNameAsString());
+        ep.setParameters(md.getParameters().stream().map(p -> {
+            ApiEndpoint.ApiParameter param = new ApiEndpoint.ApiParameter();
+            param.setName(p.getNameAsString());
+            param.setType(p.getTypeAsString());
+            param.setIn(inferParameterIn(p));
+            param.setRequired(true);
+            return param;
+        }).toList());
+        ep.setResponseType(md.getTypeAsString());
+        ep.setTags(new ArrayList<>());
+        endpoints.add(ep);
     }
 
     private ApiEndpoint.ApiParameter.ParameterIn inferParameterIn(

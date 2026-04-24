@@ -3,10 +3,10 @@
 # ============================================================
 analyzer:
   # 要分析的项目路径（必填）
-  project-path: .
+  project-path: E:\project\bocon-app-upgrade
 
   # 报告输出目录
-  output-dir: ./analysis-reports
+  output-dir: E:\project\bocon-app-upgrade\analysis-reports
 
   # 要执行的分析模块（逗号分隔，留空表示全部）
   # 可选值: architecture, business, flow, api, structure, ops, pitfall, quickstart, ai-memory
